@@ -1,5 +1,7 @@
 import {ThemeProvider} from 'styled-components';
 import {BrowserRouter, Switch, Route} from 'react-router-dom';
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify';
 import Home from './pages/Home';
 import NewPage from './pages/New';
 
@@ -20,6 +22,7 @@ function App() {
                   <Route exact path="/"><Home /></Route>
                   <Route path="/new"><NewPage /></Route>
               </Switch>
+              <ToastContainer autoClose={3000} />
           </BrowserRouter>
       </ThemeProvider>
   );

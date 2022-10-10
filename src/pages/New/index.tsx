@@ -12,23 +12,57 @@ import {
   Section,
 } from "./styles";
 import Input from "../../components/Input";
-import { LatLngExpression } from "leaflet";
+import { LatLngExpression, LeafletMouseEvent } from "leaflet";
 import { Marker, TileLayer } from "react-leaflet";
 import { categories } from "./categories";
+import useGeoLocation from "../../hooks/useGetLocation";
+import { api } from "../../services/api";
+import { toast } from "react-toastify";
+import { useHistory } from "react-router-dom";
 
 export default function New() {
+
+  const history = useHistory();
+
   const [formValues, setFormValues] = useState({
     name: "",
     description: "",
     contact: "",
     category: "",
+    coords: [0, 0]
   });
 
-  
+  const {coords} = useGeoLocation();
+
+  async function onSubmit() {
+
+      const response = await api.post('/store', {
+          ...formValues,
+          latitude: formValues.coords[0],
+          longitude: formValues.coords[1]
+      });
+
+      if (response.status === 200) {
+
+          toast.success('Estabelecimento gravado com sucesso!');
+          history.push('/');
+
+      }
+
+  }
+
+  if (!coords) {
+    return <h1>Obtendo localização...</h1>
+  }
 
   return (
     <Container>
-      <Form>
+      <Form onSubmit={(event) => {
+
+          event.preventDefault();
+          onSubmit();
+
+      }}>
         <FormTitle>Cadastro do comercio local</FormTitle>
         <Section>Dados</Section>
 
@@ -56,17 +90,25 @@ export default function New() {
         <Section>Endereço</Section>
 
         <MapContainer center={{
-            lat: 0,
-            lng: 0
+            lat: coords[0],
+            lng: coords[1]
         } as LatLngExpression}
           zoom={13}
-          whenCreated={() => {}}
+          whenCreated={(map) => {
+
+              map.addEventListener('click', (event: LeafletMouseEvent) => {
+
+                  setFormValues((prev) => ({...prev, coords: [event.latlng.lat, event.latlng.lng]}));
+
+              })
+
+          }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <Marker position={[0,0] as LatLngExpression}/>
+          <Marker position={[formValues.coords[0], formValues.coords[1]] as LatLngExpression}/>
         </MapContainer>
 
         <Section>Categoria</Section>
@@ -77,7 +119,11 @@ export default function New() {
                 return (
                     <CategoryBox 
                       key={category.key} 
-                      onClick={prev => ({...prev, category: category.key})}
+                      onClick={() => {
+
+                          setFormValues((prev) => ({...prev, category: category.key}));
+
+                      }}
                       isActive={formValues.category === category.key}
                     >
                       <CategoryImage src={category.url} />
